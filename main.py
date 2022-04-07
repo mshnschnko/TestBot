@@ -8,7 +8,7 @@ from multiprocessing import *
 import datetime
 # from flask import Flask, request
 
-token = '5252133698:AAF-w9vgM1tmfNIVNJThzHF77iX0IZZ0Bl4'
+token = 'TOKEN'
 bot = telebot.TeleBot(token)
 # app = Flask(__name__)
 APP_NAME = 'secondtestbotautomati'
@@ -29,11 +29,11 @@ APP_NAME = 'secondtestbotautomati'
 #
 #     @staticmethod
 #     def send_message1():
-#         bot.send_message('354866247', 'Отправка сообщения по времени')
+#         bot.send_message('USERID', 'Отправка сообщения по времени')
 #
 #     @staticmethod
 #     def send_message2():
-#         bot.send_message('354866247', 'Отправка сообщения через определенное время')
+#         bot.send_message('USERID', 'Отправка сообщения через определенное время')
 
 # @bot.message_handler(content_types=['text'])
 # def get_text_messages(message):
