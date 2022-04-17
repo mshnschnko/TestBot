@@ -1,3 +1,4 @@
 pytelegrambotapi
 telebot
 schedule
+psycopg2
