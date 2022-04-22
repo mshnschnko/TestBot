@@ -1,7 +1,7 @@
 import os
 import psycopg2
 
-# DATABASE_URL = os.environ['DBURL']
+# DATABASE_URL = os.environ['URL']
 db_name = "DBNAME"
 
 def con_to_db():
@@ -38,9 +38,9 @@ def create_table_users(connection):
         # print(res)
     cursor.close()
 
-def add_active_user(connection, user_id, region, process_id):
+def add_active_user(connection, user_id, region, process_id, last_command):
     cursor = connection.cursor()
-    add_user_query = f"INSERT INTO users (ID, REGION, PROCESS_ID) VALUES ({user_id}, '{region}', {process_id})"
+    add_user_query = f"INSERT INTO users (ID, REGION, PROCESS_ID, LAST_COMMAND) VALUES ({user_id}, '{region}', {process_id}, '{last_command}')"
     cursor.execute(add_user_query)
     connection.commit()
 
@@ -63,24 +63,36 @@ def search_user(connection, user_id):
     else:
         return 0
 
-def clear_table():
+def clear_table_users():
     conn = con_to_db()
     cursor = conn.cursor()
     query = f"DELETE FROM users WHERE ID > 1"
     cursor.execute(query)
     conn.commit()
 
-def update_status(user_id, last_command):
+def update_status(user_id, region, process_id, last_command):
     conn = con_to_db()
     cursor = conn.cursor()
-    update_query = f"UPDATE users SET LAST_COMMAND = '{last_command}' WHERE ID = {user_id}"
+    update_query = f"UPDATE users SET REGION = '{region}', PROCESS_ID = {process_id}, LAST_COMMAND = '{last_command}' WHERE ID = {user_id}"
     cursor.execute(update_query)
     conn.commit()
 
-def add_column():
+def add_column_to_users():
     conn = con_to_db()
     cursor = conn.cursor()
     query = "ALTER TABLE users ADD LAST_COMMAND CHARACTER VARYING(30);"
     cursor.execute(query)
     conn.commit()
     print('added')
+
+def select_efficiency(region):
+    conn = con_to_db()
+    cursor = conn.cursor()
+    query = f"SELECT * FROM factories WHERE region = '{region}';"
+    cursor.execute(query)
+    conn.commit
+    res = cursor.fetchall()
+    if (len(res) != 0):
+        return res[0]
+    else:
+        return 0

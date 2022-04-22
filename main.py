@@ -18,9 +18,13 @@ APP_NAME = 'secondtestbotautomati'
 
 
 def start_schedule(id, region, process_id):
-    job1 = schedule.every().day.at("11:02").do(lambda: send_message1(id)).tag('daile', '1')
+    job1 = schedule.every().day.at("11:02").do(lambda: send_message2(id)).tag('daily', '1')
     job2 = schedule.every(5).seconds.do(lambda: send_message2(id)).tag('secondly', '2')
-    db_manager.add_active_user(db_manager.con_to_db(), id, region, process_id)
+    res = db_manager.search_user(db_manager.con_to_db(), id)
+    if (res == 0):
+        db_manager.add_active_user(db_manager.con_to_db(), id, region, process_id, '/start')
+    else:
+        db_manager.update_status(id, region, process_id, '/start')
     while (True):  # Запуск цикла
         schedule.run_pending()
         time.sleep(1)
@@ -59,7 +63,14 @@ def send_message1(id):
 def send_message2(id):
     search_res = db_manager.search_user(db_manager.con_to_db(), id)
     region = search_res[1]
-    bot.send_message(id, f'Отправка сообщения через определенное время. Ваш город - {region}')
+    info_res = db_manager.select_efficiency(region)
+    if (info_res == 0):
+        bot.send_message(id, f'Данные о показателях эффективности в данном регионе отсутствуют')
+    else:
+        total = info_res[2]
+        defects = info_res[3]
+        efficiency = format((total - defects) / total * 100, '.2f')
+        bot.send_message(id, f'Фабрика: {region}\nВсего произведено: {total}\nБрак: {defects}\nЭффективность: {efficiency}')
 
 
 @bot.message_handler(content_types=['text'])
@@ -72,7 +83,7 @@ def start(message):
     if (message.text == '/start'):
         # print('start')
         search_res = db_manager.search_user(db_manager.con_to_db(), id)
-        if (search_res == 0):
+        if (search_res == 0 or search_res[3] == '/stop'):
             # print('aaaaaaaaaaaaaaaa')
             # print(search_res)
             last_command = message.text
@@ -93,14 +104,20 @@ def start(message):
     elif (message.text == '/stop'):
         # print('stop')
         search_res = db_manager.search_user(db_manager.con_to_db(), id)
-        if (search_res == 0):
-            bot.send_message(message.chat.id, 'Вы ни на что не подписаны.')
+        if (search_res == 0 or search_res[3] == '/stop'):
+            bot.send_message(message.chat.id, 'Вы ни на что не подписаны. Чтобы подписаться на информационную рассылку, нажмите /start.')
         else:
             # print(search_res)
             # print('PREdeleted')
-            bot.send_message(message.chat.id, 'Вы отписались от рассылки. Чтобы подписаться снова, нажмите /start.')
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+            Tula_btn = types.KeyboardButton("Тула")
+            SaintP_btn = types.KeyboardButton("Питер")
+            Pskov_btn = types.KeyboardButton("Псков")
+            markup.add(Tula_btn, SaintP_btn, Pskov_btn)
+            bot.send_message(message.chat.id, 'Вы отписались от рассылки. Чтобы подписаться снова, нажмите /start или сразу выберете город', reply_markup=markup)
             stop_process(id)
-            db_manager.delete_user(db_manager.con_to_db(), id)
+            db_manager.update_status(id, search_res[1], search_res[2], '/stop')
+            # db_manager.delete_user(db_manager.con_to_db(), id)
             last_command = message.text
             # print('deleted')
 
@@ -109,7 +126,7 @@ def start(message):
         last_command = message.text
     elif (message.text == 'Тула' or message.text == 'Питер' or message.text == 'Псков'):
         search_res = db_manager.search_user(db_manager.con_to_db(), id)
-        if (search_res == 0):
+        if (search_res == 0 or search_res[3] == '/stop'):
             region = message.text
             bot.send_message(message.chat.id, f"Вы выбрали регион {region}")
             start_process(id, region)
@@ -126,7 +143,7 @@ last_command: str = ' '
 
 if (__name__ == '__main__'):
     try:
-        db_manager.clear_table()
+        # db_manager.clear_table_users()
         # print('cleared')
         conn = db_manager.con_to_db()
         db_manager.create_table_users(conn)
