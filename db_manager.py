@@ -94,15 +94,9 @@ def clear_table_users(connection):
 
 def update_status(connection, user_id, region, process_id, last_command):
     cursor = connection.cursor()
-    print(user_id)
-    print(region)
-    print(process_id)
-    print(last_command)
     update_query = f"UPDATE users SET REGION = '{region}', PROCESS_ID = {process_id}, LAST_COMMAND = '{last_command}' WHERE ID = {user_id}"
-    print(update_query)
     cursor.execute(update_query)
     connection.commit()
-    print('asas')
 
 def add_column_to_users(connection):
     cursor = connection.cursor()
