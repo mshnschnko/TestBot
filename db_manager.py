@@ -15,12 +15,10 @@ def con_to_db():
 
 def create_table_users(connection):
     cursor = connection.cursor()
-    # print('pizda')
     check_query = f"SELECT * FROM pg_catalog.pg_tables WHERE tablename = 'users';"
     cursor.execute(check_query)
     connection.commit()
     res = cursor.fetchall()
-    # print('NEpizda')
     if (len(res) == 0):
         create_table_query = """CREATE TABLE users
                                 (
@@ -35,7 +33,6 @@ def create_table_users(connection):
         cursor.execute(check_query)
         connection.commit()
         res = cursor.fetchall()
-        # print(res)
     cursor.close()
 
 def add_active_user(connection, user_id, region, process_id, last_command):
@@ -45,12 +42,10 @@ def add_active_user(connection, user_id, region, process_id, last_command):
     connection.commit()
 
 def delete_user(connection, user_id):
-    # print('bef del')
     cursor = connection.cursor()
     del_user_query = f"DELETE FROM users WHERE ID = {user_id}"
     cursor.execute(del_user_query)
     connection.commit()
-    # print('af del')
 
 def search_user(connection, user_id):
     cursor = connection.cursor()
@@ -63,34 +58,58 @@ def search_user(connection, user_id):
     else:
         return 0
 
-def clear_table_users():
-    conn = con_to_db()
-    cursor = conn.cursor()
+def is_logged(connection, user_id):
+    cursor = connection.cursor()
+    query = f"SELECT LOG_IN FROM users WHERE ID = {user_id}"
+    cursor.execute(query)
+    connection.commit()
+    res = cursor.fetchall()
+    return (res[0])[0]
+
+def update_log_in(connection, user_id, status):
+    cursor = connection.cursor()
+    update_query = f"UPDATE users SET LOG_IN = '{status}' WHERE ID = {user_id}"
+    cursor.execute(update_query)
+    connection.commit()
+
+def is_tried_to_log(connection, user_id):
+    cursor = connection.cursor()
+    query = f"SELECT TRIED_TO_LOG FROM users WHERE ID = {user_id}"
+    cursor.execute(query)
+    connection.commit()
+    res = cursor.fetchall()
+    return (res[0])[0]
+
+def update_tried_to_log(connection, user_id, status):
+    cursor = connection.cursor()
+    update_query = f"UPDATE users SET TRIED_TO_LOG = '{status}' WHERE ID = {user_id}"
+    cursor.execute(update_query)
+    connection.commit()
+
+def clear_table_users(connection):
+    cursor = connection.cursor()
     query = f"DELETE FROM users WHERE ID > 1"
     cursor.execute(query)
-    conn.commit()
+    connection.commit()
 
-def update_status(user_id, region, process_id, last_command):
-    conn = con_to_db()
-    cursor = conn.cursor()
+def update_status(connection, user_id, region, process_id, last_command):
+    cursor = connection.cursor()
     update_query = f"UPDATE users SET REGION = '{region}', PROCESS_ID = {process_id}, LAST_COMMAND = '{last_command}' WHERE ID = {user_id}"
     cursor.execute(update_query)
-    conn.commit()
+    connection.commit()
 
-def add_column_to_users():
-    conn = con_to_db()
-    cursor = conn.cursor()
+def add_column_to_users(connection):
+    cursor = connection.cursor()
     query = "ALTER TABLE users ADD LAST_COMMAND CHARACTER VARYING(30);"
     cursor.execute(query)
-    conn.commit()
+    connection.commit()
     print('added')
 
-def select_efficiency(region):
-    conn = con_to_db()
-    cursor = conn.cursor()
+def select_efficiency(connection, region):
+    cursor = connection.cursor()
     query = f"SELECT * FROM factories WHERE region = '{region}';"
     cursor.execute(query)
-    conn.commit
+    connection.commit
     res = cursor.fetchall()
     if (len(res) != 0):
         return res[0]
