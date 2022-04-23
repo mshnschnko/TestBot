@@ -137,7 +137,8 @@ def start(message):
             db_manager.update_tried_to_log(conn, id, 'true')
         elif (message.text == password):
             db_manager.update_log_in(conn, id, 'true')
-            bot.send_message(message.chat.id, 'Пароль успешно введен.\nДля запуска напишите /start\nДля остановки напишите /stop\nДля выхода из учетной записи напишите /logout')
+            bot.send_message(message.chat.id, 'Пароль успешно введен. В целях Вашей же безопасности сообщение с паролем было удалено.\nДля запуска напишите /start\nДля остановки напишите /stop\nДля выхода из учетной записи напишите /logout')
+            bot.delete_message(message.chat.id, message.message_id)
         else:
             bot.send_message(message.chat.id, 'Неверный пароль, попробуйте еще раз')
 
