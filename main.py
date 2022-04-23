@@ -104,12 +104,13 @@ def start(message):
                 Pskov_btn = types.KeyboardButton("Псков")
                 markup.add(Tula_btn, SaintP_btn, Pskov_btn)
                 bot.send_message(message.chat.id, 'Вы отписались от рассылки. Чтобы подписаться снова, нажмите /start или сразу выберете город', reply_markup=markup)
-                stop_process(id)
                 db_manager.update_status(conn, id, search_res[1], search_res[2], '/stop')
+                stop_process(id)
+                
                 last_command = message.text
 
         elif (message.text == '/help'):
-            bot.send_message(message.chat.id, 'Для запуска напишите /start\nДля остановки напишите /stop')
+            bot.send_message(message.chat.id, 'Для запуска напишите /start\nДля остановки напишите /stop\nДля выхода из учетной записи напишите /logout')
             last_command = message.text
         elif (message.text == 'Тула' or message.text == 'Питер' or message.text == 'Псков'):
             search_res = db_manager.search_user(conn, id)
@@ -136,7 +137,7 @@ def start(message):
             db_manager.update_tried_to_log(conn, id, 'true')
         elif (message.text == password):
             db_manager.update_log_in(conn, id, 'true')
-            bot.send_message(message.chat.id, 'Пароль успешно введен.\nДля запуска напишите /start\nДля остановки напишите /stop\nДля выхода из учетной записи напишите /logout.')
+            bot.send_message(message.chat.id, 'Пароль успешно введен.\nДля запуска напишите /start\nДля остановки напишите /stop\nДля выхода из учетной записи напишите /logout')
         else:
             bot.send_message(message.chat.id, 'Неверный пароль, попробуйте еще раз')
 
