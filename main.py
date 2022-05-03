@@ -83,7 +83,7 @@ def start(message):
             search_res = db_manager.search_user(conn, id)
             if (search_res == 0 or search_res[3] == '/stop'):
                 last_command = message.text
-                bot.send_message(message.chat.id, 'Вы подписались на рассылку сообщений о результатах работы смены. Сейчас вы начнете получать сообщения каждые 5 секунд, а также каждый день в 11:02. Чтобы отписаться, нажмите /stop.')
+                bot.send_message(message.chat.id, 'Вы подписались на рассылку сообщений о результатах работы смены. Теперь вам будут приходить результаты работы выбранной фабрики в конце каждой рабочей смены. Чтобы отписаться, нажмите /stop.')
 
                 markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
                 Tula_btn = types.KeyboardButton("Тула")
@@ -133,14 +133,15 @@ def start(message):
             last_command = message.text
     else:
         if (db_manager.is_tried_to_log(conn, id) == 0):
-            bot.send_message(message.chat.id, 'Введите пароль')
+            bot.send_message(message.chat.id, 'Введите пароль. В целях Вашей же безопасности сообщения с вводами пароля будут удалены.')
             db_manager.update_tried_to_log(conn, id, 'true')
         elif (message.text == password):
             db_manager.update_log_in(conn, id, 'true')
-            bot.send_message(message.chat.id, 'Пароль успешно введен. В целях Вашей же безопасности сообщение с паролем было удалено.\nДля запуска напишите /start\nДля остановки напишите /stop\nДля выхода из учетной записи напишите /logout')
+            bot.send_message(message.chat.id, 'Пароль успешно введен.\nДля запуска напишите /start\nДля остановки напишите /stop\nДля выхода из учетной записи напишите /logout')
             bot.delete_message(message.chat.id, message.message_id)
         else:
             bot.send_message(message.chat.id, 'Неверный пароль, попробуйте еще раз')
+            bot.delete_message(message.chat.id, message.message_id)
 
 
 p: Process
