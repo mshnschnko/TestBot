@@ -1,16 +1,13 @@
-import imp
 import multiprocessing
 from pickle import FALSE, TRUE
+import numpy
 
 import telebot
 import schedule
 import time
 from telebot import types
-import subprocess
 from multiprocessing import *
 import db_manager
-from psycopg2 import Error
-import datetime
 # from flask import Flask, request
 
 token = 'TOKEN'
@@ -20,27 +17,29 @@ APP_NAME = 'secondtestbotautomati'
 password = '123'
 conn = db_manager.con_to_db()
 
-def start_schedule(id, region, process_id):
+def start_schedule(id, line, process_id):
     job1 = schedule.every().day.at("11:02").do(lambda: send_message2(id)).tag('daily', '1')
     job2 = schedule.every(5).seconds.do(lambda: send_message2(id)).tag('secondly', '2')
     res = db_manager.search_user(conn, id)
     if (res == 0):
-        db_manager.add_active_user(conn, id, region, process_id, '/start')
+        db_manager.add_active_user(conn, id, line, process_id, '/start')
     else:
-        db_manager.update_status(conn, id, region, process_id, '/start')
+        db_manager.update_status(conn, id, line, process_id, '/start')
     while (True):  # Запуск цикла
         schedule.run_pending()
         time.sleep(1)
 
+permission = True
 
-
-def start_process(id, region):  # Запуск Process
+def start_process(id, line):  # Запуск Process
     global process_list
     global p
     free_proc_id = len(process_list)
-    p = Process(target=start_schedule, args=((id, region, free_proc_id)))
-    process_list.append(p)
-    p.start()
+    p = Process(target=start_schedule, args=((id, line, free_proc_id)))
+    global permission
+    if (permission):
+        process_list.append(p)
+        p.start()
 
 def stop_process(id):
     global process_list
@@ -53,20 +52,29 @@ def stop_process(id):
 
 def send_message1(id):
     search_res = db_manager.search_user(conn, id)
-    region = search_res[1]
-    bot.send_message(id, f'Отправка сообщения по времени. Ваш город - {region}')
+    line = search_res[1]
+    bot.send_message(id, f'Отправка сообщения по времени. Ваш город - {line}')
 
 def send_message2(id):
     search_res = db_manager.search_user(conn, id)
-    region = search_res[1]
-    info_res = db_manager.select_efficiency(conn, region)
+    line = search_res[1]
+    info_res = db_manager.select_efficiency(conn, line)
     if (info_res == 0):
-        bot.send_message(id, f'Данные о показателях эффективности в данном регионе отсутствуют')
+        bot.send_message(id, f'Данные о показателях эффективности на данной линии отсутствуют')
+        db_manager.update_status(conn, id, search_res[1], search_res[2], '/stop')
+        stop_process(id)
+        global permission
+        permission = False
     else:
-        total = info_res[2]
-        defects = info_res[3]
-        efficiency = format((total - defects) / total * 100, '.2f')
-        bot.send_message(id, f'Фабрика: {region}\nВсего произведено: {total}\nБрак: {defects}\nЭффективность: {efficiency}')
+        for i in range (numpy.shape(info_res)[0]):
+            assessment = '🟢'
+            total = info_res[i][2]
+            defects = info_res[i][3]
+            efficiency = (total - defects) / total * 100
+            efficiency_str = format(efficiency, '.2f')
+            if (efficiency < 90):
+                assessment = '🔴'
+            bot.send_message(id, f'Линия: {line}\nВсего произведено: {total}\nБрак: {defects}\nЭффективность: {efficiency_str}{assessment}')
 
 
 @bot.message_handler(content_types=['text'])
@@ -83,14 +91,14 @@ def start(message):
             search_res = db_manager.search_user(conn, id)
             if (search_res == 0 or search_res[3] == '/stop'):
                 last_command = message.text
-                bot.send_message(message.chat.id, 'Вы подписались на рассылку сообщений о результатах работы смены. Теперь вам будут приходить результаты работы выбранной фабрики в конце каждой рабочей смены. Чтобы отписаться, нажмите /stop.')
+                bot.send_message(message.chat.id, 'Вы подписались на рассылку сообщений о результатах работы смены. Теперь вам будут приходить результаты работы выбранной линии в конце каждой рабочей смены. Чтобы отписаться, нажмите /stop.')
 
                 markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-                Tula_btn = types.KeyboardButton("Тула")
-                SaintP_btn = types.KeyboardButton("Питер")
-                Pskov_btn = types.KeyboardButton("Псков")
-                markup.add(Tula_btn, SaintP_btn, Pskov_btn)
-                bot.send_message(message.chat.id, 'Выберите регион.', reply_markup=markup)
+                Hanky_btn = types.KeyboardButton("HANKY")
+                Facial_btn = types.KeyboardButton("FACIAL")
+                Both_btn = types.KeyboardButton("Обе линии")
+                markup.add(Hanky_btn, Facial_btn, Both_btn)
+                bot.send_message(message.chat.id, 'Выберите линию.', reply_markup=markup)
             else:
                 bot.send_message(message.chat.id, 'Вы уже подписаны на расслыку.')
         elif (message.text == '/stop'):
@@ -99,11 +107,11 @@ def start(message):
                 bot.send_message(message.chat.id, 'Вы ни на что не подписаны. Чтобы подписаться на информационную рассылку, нажмите /start.')
             else:
                 markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-                Tula_btn = types.KeyboardButton("Тула")
-                SaintP_btn = types.KeyboardButton("Питер")
-                Pskov_btn = types.KeyboardButton("Псков")
-                markup.add(Tula_btn, SaintP_btn, Pskov_btn)
-                bot.send_message(message.chat.id, 'Вы отписались от рассылки. Чтобы подписаться снова, нажмите /start или сразу выберете город', reply_markup=markup)
+                Hanky_btn = types.KeyboardButton("HANKY")
+                Facial_btn = types.KeyboardButton("FACIAL")
+                Both_btn = types.KeyboardButton("Обе линии")
+                markup.add(Hanky_btn, Facial_btn, Both_btn)
+                bot.send_message(message.chat.id, 'Вы отписались от рассылки. Чтобы подписаться снова, нажмите /start или сразу выберете линию', reply_markup=markup)
                 db_manager.update_status(conn, id, search_res[1], search_res[2], '/stop')
                 stop_process(id)
                 
@@ -112,12 +120,16 @@ def start(message):
         elif (message.text == '/help'):
             bot.send_message(message.chat.id, 'Для запуска напишите /start\nДля остановки напишите /stop\nДля выхода из учетной записи напишите /logout')
             last_command = message.text
-        elif (message.text == 'Тула' or message.text == 'Питер' or message.text == 'Псков'):
+        elif (message.text == 'HANKY' or message.text == 'FACIAL' or message.text == 'Обе линии' or message.text == 'жопа'):
             search_res = db_manager.search_user(conn, id)
             if (search_res == 0 or search_res[3] == '/stop'):
-                region = message.text
-                bot.send_message(message.chat.id, f"Вы выбрали регион {region}")
-                start_process(id, region)
+                line = message.text
+                if (message.text == 'HANKY' or message.text == 'FACIAL' or message.text == 'жопа'):
+                    bot.send_message(message.chat.id, f"Вы выбрали линию {line}.")
+                    start_process(id, line)
+                elif (message.text == 'Обе линии'):
+                    bot.send_message(message.chat.id, f"Вы выбрали обе линии.")
+                    start_process(id, line)
             else:
                 bot.send_message(message.chat.id, 'Вы уже подписаны на расслыку.')
         elif (message.text == '/logout'):

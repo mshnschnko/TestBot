@@ -23,7 +23,7 @@ def create_table_users(connection):
         create_table_query = """CREATE TABLE users
                                 (
                                     ID integer PRIMARY KEY,
-                                    REGION CHARACTER VARYING(30),
+                                    LINE CHARACTER VARYING(30),
                                     PROCESS_ID integer
                                 );"""
         cursor.execute(create_table_query)
@@ -35,9 +35,9 @@ def create_table_users(connection):
         res = cursor.fetchall()
     cursor.close()
 
-def add_active_user(connection, user_id, region, process_id, last_command):
+def add_active_user(connection, user_id, line, process_id, last_command):
     cursor = connection.cursor()
-    add_user_query = f"INSERT INTO users (ID, REGION, PROCESS_ID, LAST_COMMAND) VALUES ({user_id}, '{region}', {process_id}, '{last_command}')"
+    add_user_query = f"INSERT INTO users (ID, LINE, PROCESS_ID, LAST_COMMAND) VALUES ({user_id}, '{line}', {process_id}, '{last_command}')"
     cursor.execute(add_user_query)
     connection.commit()
 
@@ -92,9 +92,9 @@ def clear_table_users(connection):
     cursor.execute(query)
     connection.commit()
 
-def update_status(connection, user_id, region, process_id, last_command):
+def update_status(connection, user_id, line, process_id, last_command):
     cursor = connection.cursor()
-    update_query = f"UPDATE users SET REGION = '{region}', PROCESS_ID = {process_id}, LAST_COMMAND = '{last_command}' WHERE ID = {user_id}"
+    update_query = f"UPDATE users SET LINE = '{line}', PROCESS_ID = {process_id}, LAST_COMMAND = '{last_command}' WHERE ID = {user_id}"
     cursor.execute(update_query)
     connection.commit()
 
@@ -105,13 +105,17 @@ def add_column_to_users(connection):
     connection.commit()
     print('added')
 
-def select_efficiency(connection, region):
+def select_efficiency(connection, line):
     cursor = connection.cursor()
-    query = f"SELECT * FROM factories WHERE region = '{region}';"
+    if (line != 'Обе линии'):
+        query = f"SELECT * FROM lines WHERE line_desc = '{line}';"
+    else:
+        query = f"SELECT * FROM lines WHERE line_desc = 'HANKY' OR line_desc = 'FACIAL';"
     cursor.execute(query)
     connection.commit
     res = cursor.fetchall()
+    # print(res)
     if (len(res) != 0):
-        return res[0]
+        return res
     else:
         return 0
